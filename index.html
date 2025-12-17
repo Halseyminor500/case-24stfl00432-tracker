@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case 24STFL00432 - Real-Time Tracker</title>
+    <style>
+        :root {
+            --urgent-red: #dc2626;
+            --success-green: #16a34a;
+            --pending-amber: #d97706;
+            --primary-teal: #0d9488;
+            --bg-light: #f8fafc;
+            --surface-white: #ffffff;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: var(--surface-white);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+            border-left: 5px solid var(--urgent-red);
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            color: var(--text-dark);
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 24px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-urgent { background-color: rgba(220,38,38,0.15); color: var(--urgent-red); }
+        .badge-inprogress { background-color: rgba(13,148,136,0.15); color: var(--primary-teal); }
+        .badge-submitted { background-color: rgba(22,163,74,0.15); color: var(--success-green); }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 150ms ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-teal);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0f766e;
+            box-shadow: 0 4px 12px rgba(13,148,136,0.3);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-light);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            border-bottom: 3px solid transparent;
+            transition: all 150ms ease;
+        }
+
+        .tab.active {
+            color: var(--primary-teal);
+            border-bottom-color: var(--primary-teal);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .filing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .filing-card {
+            background: var(--surface-white);
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 150ms ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filing-card.urgent {
+            border-color: var(--urgent-red);
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+        }
+
+        .filing-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary-teal);
+        }
+
+        .filing-header {
+            padding: 16px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #f5fdf9 100%);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .filing-card.urgent .filing-header {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        }
+
+        .filing-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: var(--text-dark);
+        }
+
+        .filing-card.urgent .filing-title {
+            color: var(--urgent-red);
+        }
+
+        .filing-body {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filing-description {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 12px;
+            flex: 1;
+        }
+
+        .katherine-needs {
+            background-color: rgba(13,148,136,0.08);
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-teal);
+            font-size: 12px;
+            margin: 12px 0;
+            font-weight: 500;
+        }
+
+        .last-update {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .katherine-items {
+            background: var(--surface-white);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .katherine-items h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            color: var(--text-dark);
+        }
+
+        .katherine-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background-color: var(--bg-light);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .katherine-item input[type="checkbox"] {
+            margin-top: 3px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .katherine-item.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        @media (max-width: 768px) {
+            .filing-grid { grid-template-columns: 1fr; }
+            .tabs { flex-direction: column; }
+            .case-meta { flex-direction: column; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚖️ Case 24STFL00432 - Real-Time Tracker</h1>
+            <div class="case-meta">
+                <div><strong>Case:</strong> In Re Marriage of Minor</div>
+                <div><strong>Court:</strong> LA Superior Court, Stanley Mosk Dept 23</div>
+                <div><strong>Attorney:</strong> Katherine Schwenke, LDA (Family Law Document Services)</div>
+                <div><strong>Status:</strong> <span class="badge badge-urgent">ACTIVE</span></div>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(event, 'filings')">Filings</button>
+            <button class="tab" onclick="switchTab(event, 'katherine')">Katherine's To-Do</button>
+            <button class="tab" onclick="switchTab(event, 'timeline')">Email Timeline</button>
+        </div>
+
+        <div id="filings" class="tab-content active">
+            <div class="filing-grid" id="filingsList"></div>
+        </div>
+
+        <div id="katherine" class="tab-content">
+            <div class="katherine-items">
+                <h3>📋 Katherine's Action Items (from emails)</h3>
+                <div id="katherineList"></div>
+            </div>
+        </div>
+
+        <div id="timeline" class="tab-content">
+            <div style="background: white; padding: 20px; border-radius: 8px;">
+                <h3>📅 Email Timeline (Most Recent First)</h3>
+                <div id="timelineList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const filings = [
+            {
+                id: 1,
+                type: "DV-116 Form - Restraining Order Hearing",
+                status: "in-progress",
+                urgency: "URGENT",
+                description: "New DV-116 form showing February 11th hearing date. Katherine needs this to send to sheriff for service.",
+                katherineNeeds: "Get official court order from 12/10 hearing for DV-116 form",
+                lastUpdate: "Dec 16 - Katherine texted: 'I emailed the new dv116 form to the process server'",
+                dueDate: "2025-12-17"
+            },
+            {
+                id: 2,
+                type: "Motion to Compel - Financial Disclosures",
+                status: "in-progress",
+                urgency: "HIGH",
+                description: "18+ months - no FL-105, FL-140, FL-150, FL-160. Blank FL-105 served. Straightforward motion to compel.",
+                katherineNeeds: "Proof of email non-delivery, copies of written requests",
+                lastUpdate: "Dec 15 - You: 'I've still not been served her initial financial disclosures'",
+                dueDate: null
+            },
+            {
+                id: 3,
+                type: "RFO + Declaration - Support Modification",
+                status: "submitted",
+                urgency: "NORMAL",
+                description: "Motion to Modify Child/Spousal Support. Income $0. 10-page declaration. SIGNED Dec 5.",
+                katherineNeeds: "Criminal investigation exhibits, finalize format, ready to file",
+                lastUpdate: "Dec 5 - Signed via Adobe Acrobat: 'RFO with Dec no exhibits to be signed'",
+                dueDate: null
+            },
+            {
+                id: 4,
+                type: "Notice of Deposition - Shannon Minor",
+                status: "in-progress",
+                urgency: "NORMAL",
+                description: "Deposition for Petitioner (Shannon). BHPD consulted for criminal investigation questions.",
+                katherineNeeds: "Finalize with BHPD consultation input, serve on opposing counsel",
+                lastUpdate: "Dec 14 - You asked Katherine about deposition requirements",
+                dueDate: "2025-12-23"
+            },
+            {
+                id: 5,
+                type: "Motion for Relief (Ex Parte) - Stay",
+                status: "in-progress",
+                urgency: "URGENT",
+                description: "Motion to stay divorce until criminal case resolution. Constitutional/Marcy's Law violations. Criminal exhibits required.",
+                katherineNeeds: "Criminal investigation exhibits, top attorney review, AI revision complete",
+                lastUpdate: "Dec 13 - You: 'Stop work on previous motion to stay. The AI is more powerful and found deficiencies'",
+                dueDate: null
+            },
+            {
+                id: 6,
+                type: "Vacate DVRO - Hague Service Convention Violation",
+                status: "in-progress",
+                urgency: "CRITICAL",
+                description: "Motion to vacate hearing for lack of lawful service. Hague Convention violation. Email service without consent.",
+                katherineNeeds: "Court acknowledgment of Hague Convention requirement for Mexico service",
+                lastUpdate: "Ongoing throughout case - standing motion",
+                dueDate: null
+            }
+        ];
+
+        const katherineItems = [
+            "Get official court order from 12/10 hearing for DV-116 form with Feb 11 date",
+            "Send DV-116 to process server for sheriff service",
+            "Prepare Motion to Compel financial disclosures",
+            "Finalize RFO (Declaration signed 12/5 via Adobe) - ready to file",
+            "Coordinate deposition notice with BHPD",
+            "Work on motion to stay pending AI revision - need criminal exhibits",
+            "Invoice filed: motion fees, filing fees, process server fees"
+        ];
+
+        const emailTimeline = [
+            { date: "Dec 16, 10:06 PM", from: "Katherine", msg: "Tracker for case status - where we are with all motions, filings, hearings" },
+            { date: "Dec 16, 9:49 PM", from: "Katherine (SMS)", msg: "I emailed the new dv116 form to the process server" },
+            { date: "Dec 15, 6:59 PM", from: "You", msg: "I'm fighting corruption. I'm going to show you the future of divorce" },
+            { date: "Dec 15, 6:56 PM", from: "You", msg: "I've still not been served her initial financial disclosures - blank FL105 given" },
+            { date: "Dec 15, 4:52 PM", from: "You", msg: "you have no tro bec..." },
+            { date: "Dec 15, 4:39 PM", from: "Katherine (SMS)", msg: "If you did not get it, I will have to get it today. So I can send it to the sheriff" },
+            { date: "Dec 14, 1:17 AM", from: "You", msg: "Deposition first, then this is the full pact for my relief motion" },
+            { date: "Dec 13, 11:40 AM", from: "You", msg: "Stop work on previous motion to stay. The AI is more powerful and found deficiencies" },
+            { date: "Dec 13, 10:16 AM", from: "You", msg: "Can we get this out for 12/23 to be deposed. I will be making another quick filing" },
+            { date: "Dec 12, 5:39 PM", from: "Katherine (SMS)", msg: "Ok" },
+            { date: "Dec 12, 10:42 AM", from: "Katherine (SMS)", msg: "Hi following up on exhibits for motion to get rid of the judge" },
+            { date: "Dec 10, 7:59 PM", from: "Katherine (SMS)", msg: "Did you send the other exhibits for the motion I'm working on to get rid of the judge?" },
+            { date: "Dec 8, 8:57 PM", from: "Katherine (SMS)", msg: "Served 2/9 motion by mail and email" },
+            { date: "Dec 5, 11:57 AM", from: "Katherine (SMS)", msg: "Working on forms. I sent invoice for motion, filing fees, process server fees" },
+            { date: "Dec 5, 6:40 PM", from: "Adobe Sign", msg: "RFO with Dec no exhibits to be signed - SIGNED" }
+        ];
+
+        function renderFilings() {
+            const list = document.getElementById('filingsList');
+            list.innerHTML = filings.map(f => `
+                <div class="filing-card ${f.urgency === 'URGENT' || f.urgency === 'CRITICAL' ? 'urgent' : ''}">
+                    <div class="filing-header">
+                        <div class="filing-title">${f.type}</div>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <span class="badge badge-${f.status.replace('-','')}">" + f.status.replace('-',' ').toUpperCase() + "</span>
+                            ${f.dueDate ? `<span style="font-size:12px; color:#666;">📅 Due: ${new Date(f.dueDate).toLocaleDateString()}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="filing-body">
+                        <div class="filing-description">${f.description}</div>
+                        <div class="katherine-needs">
+                            <strong>Katherine needs:</strong> ${f.katherineNeeds}
+                        </div>
+                        <div class="last-update">
+                            <strong>Last update:</strong> ${f.lastUpdate}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderKatherineItems() {
+            const list = document.getElementById('katherineList');
+            list.innerHTML = katherineItems.map((item, i) => `
+                <div class="katherine-item" id="item-${i}">
+                    <input type="checkbox" onchange="toggleItem(${i})">
+                    <span>${item}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderTimeline() {
+            const list = document.getElementById('timelineList');
+            list.innerHTML = emailTimeline.map(e => `
+                <div style="padding:16px; border-bottom:1px solid #e2e8f0; display:flex; gap:16px;">
+                    <div style="font-size:12px; color:#64748b; min-width:140px; font-weight:500;">${e.date}</div>
+                    <div>
+                        <div style="font-weight:600; color:#0d9488; margin-bottom:4px;">${e.from}</div>
+                        <div style="color:#334155; font-size:14px;">${e.msg}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchTab(e, tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function toggleItem(i) {
+            const item = document.getElementById(`item-${i}`);
+            item.classList.toggle('completed');
+        }
+
+        renderFilings();
+        renderKatherineItems();
+        renderTimeline();
+    </script>
+</body>
+</html>
